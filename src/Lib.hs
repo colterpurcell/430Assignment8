@@ -1,10 +1,76 @@
 module Lib
-    ( parse,
-    parseExpr,
-    interp,
+    (interp,
     primOpApply,
+    primEnv,
+    Expr(..),
+    Value(..),
+    Env,
     ) where
-import Data.Sexpresso.Sexprs
+import Data.SExpresso.SExpr
+import Debug.Trace (trace)
+
+{-
+OUR GUIDING LIGHT 👼 (defines what is a valid expression
+‹expr› ::= ‹num›
+  | ‹id› ; Ident (variable or function name) but not => with or =
+  | ‹string›
+  | { if ‹expr› ‹expr› ‹expr› }
+  | { with ‹clause›* ‹expr› } ; introduces variable bindings
+  | { ‹id›* => ‹expr› } ; function with 0 or more params e.g. {x y => {+ x y}} or {=> 42}
+  | { ‹expr› ‹expr›* } ; function application: first expr is function being applied, rest are args
+
+
+‹clause› ::= [ ‹id› = ‹expr› ]
+-}
+
+data Expr
+  = NumE Double
+  | StrE String
+  | BoolE Bool
+  | IdE String
+  | IfE Expr Expr Expr
+  | WithE [(String, Expr)] Expr
+  | LamE [String] Expr
+  | AppE Expr [Expr]
+  | SeqE [Expr]
+  deriving (Show, Eq)
+
+data Value
+  = NumV Double
+  | StrV String
+  | BoolV Bool
+  | CloV [String] Expr Env
+  | PrimV String
+  | NullV -- represents a null value, similar to None in Python or null in JavaScript
+  deriving (Show, Eq)
+
+type Env = [(String, Value)]
+
+-- | primordial environment
+primEnv :: Env
+primEnv =
+  [ ("and", PrimV "and")
+  , ("or", PrimV "or")
+  , ("not", PrimV "not")
+  , ("substring", PrimV "substring")
+  , ("strlen", PrimV "strlen")
+  , ("equal?", PrimV "equal?")
+  , ("error", PrimV "error")
+  , ("true", BoolV True)
+  , ("false", BoolV False)
+  , ("+", PrimV "+")
+  , ("-", PrimV "-")
+  , ("/", PrimV "/")
+  , ("*", PrimV "*")
+  , ("<", PrimV "<")
+  , ("<=", PrimV "<=")
+  , (">", PrimV ">")
+  , (">=", PrimV ">=")
+  , ("++", PrimV "++")
+  , ("println", PrimV "println")
+  , ("read-num", PrimV "read-num")
+  , ("read-str", PrimV "read-str")
+  ]
 
 -- | a function to interprest abstract syntax tree (AST) expressions into values
 interp :: Expr -> Env -> Value
@@ -50,41 +116,43 @@ primOpApply "substring" [StrV s, NumV start, NumV len] =
   in StrV (take len' (drop start' s))
 primOpApply "strlen" [StrV s] = NumV (fromIntegral (length s))
 primOpApply "println" [StrV s] = trace s NullV
-primOpApply "read-num" [] = NumV (read (getLine) :: Double)
-primOpApply "read-str" [] = StrV (getLine)
+primOpApply "read-num" [] = error "read-num cannot be used as a pure function; it requires IO"
+primOpApply "read-str" [] = error "read-str cannot be used as a pure function; it requires IO"
 primOpApply "error" [StrV msg] = error msg
 primOpApply op args = error $ "unknown primitive operation: " ++ op ++ " with args: " ++ show args
 
 
 -- | a function to parse Sexpresso.Sexprs into Expr data type
-parse :: SExpr -> Expr
-parse (Atom (Number n)) = NumE n
-parse (Atom (String s)) = StrE s
-parse (Atom (Identifier x)) = IdE x
-parse (Atom (Boolean b)) = BoolE b
-parse (List [Atom (Identifier "if"), c, t, e]) = IfE (parse c) (parse t) (parse e)
-parse (List (Atom (Identifier "with") : rest)) =
+{-parse :: SExpr -> Expr
+parse (SAtom (Number n)) = NumE n
+parse (SAtom (String s)) = StrE s
+parse (SAtom (Ident x)) = IdE x
+parse (SAtom (Bool b)) = BoolE b
+parse (SList [SAtom (Ident "if"), c, t, e]) = IfE (parse c) (parse t) (parse e)
+parse (SList (SAtom (Ident "with") : rest)) =
   case unsnoc rest of
     Just (clauses, body) ->
-      WithE [(x, parse e) | List [Atom (Identifier x), e] <- clauses] (parse body)
+      WithE [(x, parse e) | SList [SAtom (Ident x), e] <- clauses] (parse body)
     Nothing -> error "Malformed with expression"
   where
     -- unsnoc splits a list into (init, last)
     unsnoc [] = Nothing
     unsnoc xs = Just (init xs, last xs)
-parse (List (Atom (Identifier "=>") : args)) =
+parse (SList (SAtom (Ident "=>") : args)) =
   let (params, body) = case args of
         [] -> ([], NullV) -- handle empty function case
         _  -> (init args, last args)
-  in LamE [case a of Atom (Identifier x) -> x; _ -> error "expected identifier"] (parse body)
-parse (List (f : args)) =
+  in LamE [case a of SAtom (Ident x) -> x; _ -> error "expected identifier"] (parse body)
+parse (SList (f : args)) =
   let func = parse f
       args' = map parse args
   in AppE func args'
-parse (List exprs) = SeqE (map parse exprs)
+parse (SList exprs) = SeqE (map parse exprs)
+-}
 
 -- | a helper function to turn the initial user string into a Sexpr
-parseExpr :: String -> SExpr
+{-parseExpr :: String -> SExpr
 parseExpr input =
   case parseSExpFromString input of
     Left err -> error $ "Parse error: " ++ show err
+    -}

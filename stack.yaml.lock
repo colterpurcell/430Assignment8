@@ -3,7 +3,14 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/topics/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: sexpresso-1.2.5.0@sha256:3bef16a8058107d99c1cd203ae0298ba5fb2195afca3f954b796d6921fa9d36a,2095
+    pantry-tree:
+      sha256: 9ca4c56363cb0c913dc635658c878710bfd2b54c38549e56e1c40616d87f779e
+      size: 1153
+  original:
+    hackage: sexpresso-1.2.5.0
 snapshots:
 - completed:
     sha256: 400dfb2174640dd2f9f2ba7cbf9148699f2380ab64faa46f4be298a5d6205316

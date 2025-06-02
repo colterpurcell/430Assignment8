@@ -64,7 +64,8 @@ test-suite assignment8-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      assignment8
+      HUnit
+    , assignment8
     , base >=4.7 && <5
     , sexpresso
   default-language: Haskell2010

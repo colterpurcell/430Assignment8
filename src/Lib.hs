@@ -2,6 +2,7 @@ module Lib
     (interp,
     primOpApply,
     primEnv,
+    serialize,
     Expr(..),
     Value(..),
     Env,
@@ -48,7 +49,6 @@ data Value
   | BoolV Bool
   | CloV [String] Expr Env
   | PrimV String
-  | NullV -- represents a null value, similar to None in Python or null in JavaScript
   deriving (Show, Eq)
 
 type Env = [(String, Value)]
@@ -102,6 +102,15 @@ interp (AppE f args) env =
     v -> error $ "tried to apply a non-function: " ++ show v
 interp (SeqE exprs) env = foldl (\_ e -> interp e env) (BoolV True) exprs
 
+-- | a function that takes in a Value and returns a string for tests and debugging
+serialize :: Value -> String
+serialize (NumV n) = show n
+serialize (BoolV True) = "true"
+serialize (BoolV False) = "false"
+serialize (StrV s)     = show s
+serialize (CloV _ _ _) = "#<procedure>"
+serialize (PrimV _)    = "#<primop>"
+
 -- | a function to apply primitive operations
 primOpApply :: String -> [Value] -> Value
 primOpApply "+" [NumV x, NumV y] = NumV (x + y)
@@ -118,11 +127,10 @@ primOpApply "substring" [StrV s, NumV start, NumV len] =
       len' = round len
   in StrV (take len' (drop start' s))
 primOpApply "strlen" [StrV s] = NumV (fromIntegral (length s))
-primOpApply "println" [StrV s] = trace s NullV
 primOpApply op args = error $ "unknown primitive operation: " ++ op ++ " with args: " ++ show args
 
 -- | a function to parse Sexpresso.Sexprs into Expr data type
-parse :: SExpr -> Expr
+{-parse :: SExpr -> Expr
 parse (SAtom (ANum n)) = NumE n
 parse (SAtom (AStr s)) = StrE s
 parse (SAtom (AIdent x)) = IdE x
@@ -153,4 +161,4 @@ parse (SList exprs) = SeqE (map parse exprs)
 parseExpr :: String -> SExpr
 parseExpr input =
   case parseSExpFromString input of
-    Left err -> error $ "Parse error: " ++ show err
+    Left err -> error $ "Parse error: " ++ show err-}

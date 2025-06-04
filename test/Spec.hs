@@ -10,6 +10,14 @@ testInterp_if_true = TestLabel "testInterp_if_true" (TestCase (interp (IfE (Bool
 testInterp_if_false = TestLabel "testInterp_if_false" (TestCase (interp (IfE (BoolE False) (NumE 1) (NumE 0)) primEnv @?= NumV 0))
 testInterp_with_bindings = TestLabel "testInterp_with_bindings" (TestCase (interp (WithE [("x", NumE 10)] (AppE (IdE "+") [IdE "x", NumE 5])) primEnv @?= NumV 15))
 testInterp_lambda_application = TestLabel "testInterp_lambda_application" (TestCase (interp (AppE (LamE ["x"] (AppE (IdE "+") [IdE "x", NumE 1])) [NumE 4]) primEnv @?= NumV 5))
+testserialize = TestLabel "testSerialize" (TestList
+  [ "serialize number"     ~: serialize (NumV 34)      ~?= "34"
+  , "serialize true"       ~: serialize (BoolV True)   ~?= "true"
+  , "serialize false"      ~: serialize (BoolV False)  ~?= "false"
+  , "serialize string"     ~: serialize (StrV "hello") ~?= "\"hello\""
+  , "serialize closure"    ~: serialize (ClosureV ["x"] (NumE 1) []) ~?= "#<procedure>"
+  , "serialize primop"     ~: serialize (PrimV "+")    ~?= "#<primop>"
+  ])
 
 main :: IO ()
 main = runTestTTAndExit $ TestList
@@ -22,4 +30,5 @@ main = runTestTTAndExit $ TestList
   , testInterp_if_false
   , testInterp_with_bindings
   , testInterp_lambda_application
+  , testserialize
   ]

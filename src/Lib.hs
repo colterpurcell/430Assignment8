@@ -6,8 +6,15 @@ module Lib
     Value(..),
     Env,
     ) where
-import Data.SExpresso.SExpr
 import Debug.Trace (trace)
+import Data.SExpresso.SExpr
+import qualified Data.SExpresso.Parse as Parser
+
+data Atom
+  = AIdent String
+  | ABool Bool
+  | ANum Double
+  | AStr String
 
 {-
 OUR GUIDING LIGHT 👼 (defines what is a valid expression
@@ -66,10 +73,6 @@ primEnv =
   , ("<=", PrimV "<=")
   , (">", PrimV ">")
   , (">=", PrimV ">=")
-  , ("++", PrimV "++")
-  , ("println", PrimV "println")
-  , ("read-num", PrimV "read-num")
-  , ("read-str", PrimV "read-str")
   ]
 
 -- | a function to interprest abstract syntax tree (AST) expressions into values
@@ -116,43 +119,38 @@ primOpApply "substring" [StrV s, NumV start, NumV len] =
   in StrV (take len' (drop start' s))
 primOpApply "strlen" [StrV s] = NumV (fromIntegral (length s))
 primOpApply "println" [StrV s] = trace s NullV
-primOpApply "read-num" [] = error "read-num cannot be used as a pure function; it requires IO"
-primOpApply "read-str" [] = error "read-str cannot be used as a pure function; it requires IO"
-primOpApply "error" [StrV msg] = error msg
 primOpApply op args = error $ "unknown primitive operation: " ++ op ++ " with args: " ++ show args
 
-
 -- | a function to parse Sexpresso.Sexprs into Expr data type
-{-parse :: SExpr -> Expr
-parse (SAtom (Number n)) = NumE n
-parse (SAtom (String s)) = StrE s
-parse (SAtom (Ident x)) = IdE x
-parse (SAtom (Bool b)) = BoolE b
-parse (SList [SAtom (Ident "if"), c, t, e]) = IfE (parse c) (parse t) (parse e)
-parse (SList (SAtom (Ident "with") : rest)) =
+parse :: SExpr -> Expr
+parse (SAtom (ANum n)) = NumE n
+parse (SAtom (AStr s)) = StrE s
+parse (SAtom (AIdent x)) = IdE x
+parse (SAtom (ABool b)) = BoolE b
+parse (SList [SAtom (AIdent "if"), c, t, e]) = IfE (parse c) (parse t) (parse e)
+parse (SList (SAtom (AIdent "with") : rest)) =
   case unsnoc rest of
     Just (clauses, body) ->
-      WithE [(x, parse e) | SList [SAtom (Ident x), e] <- clauses] (parse body)
+      WithE [(x, parse e) | SList [SAtom (AIdent x), e] <- clauses] (parse body)
     Nothing -> error "Malformed with expression"
   where
     -- unsnoc splits a list into (init, last)
     unsnoc [] = Nothing
     unsnoc xs = Just (init xs, last xs)
-parse (SList (SAtom (Ident "=>") : args)) =
+parse (SList (SAtom (AIdent "=>") : args)) =
   let (params, body) = case args of
         [] -> ([], NullV) -- handle empty function case
         _  -> (init args, last args)
-  in LamE [case a of SAtom (Ident x) -> x; _ -> error "expected identifier"] (parse body)
+  in LamE [case a of SAtom (AIdent x) -> x; _ -> error "expected identifier"] (parse body)
 parse (SList (f : args)) =
   let func = parse f
       args' = map parse args
   in AppE func args'
 parse (SList exprs) = SeqE (map parse exprs)
--}
+
 
 -- | a helper function to turn the initial user string into a Sexpr
-{-parseExpr :: String -> SExpr
+parseExpr :: String -> SExpr
 parseExpr input =
   case parseSExpFromString input of
     Left err -> error $ "Parse error: " ++ show err
-    -}

@@ -131,37 +131,3 @@ primOpApply "substring" [StrV s, NumV start, NumV len] =
   in StrV (take len' (drop start' s))
 primOpApply "strlen" [StrV s] = NumV (fromIntegral (length s))
 primOpApply op args = error $ "unknown primitive operation: " ++ op ++ " with args: " ++ show args
-
--- | a function to parse Sexpresso.Sexprs into Expr data type
-{-parse :: SExpr -> Expr
-parse (SAtom (ANum n)) = NumE n
-parse (SAtom (AStr s)) = StrE s
-parse (SAtom (AIdent x)) = IdE x
-parse (SAtom (ABool b)) = BoolE b
-parse (SList [SAtom (AIdent "if"), c, t, e]) = IfE (parse c) (parse t) (parse e)
-parse (SList (SAtom (AIdent "with") : rest)) =
-  case unsnoc rest of
-    Just (clauses, body) ->
-      WithE [(x, parse e) | SList [SAtom (AIdent x), e] <- clauses] (parse body)
-    Nothing -> error "Malformed with expression"
-  where
-    -- unsnoc splits a list into (init, last)
-    unsnoc [] = Nothing
-    unsnoc xs = Just (init xs, last xs)
-parse (SList (SAtom (AIdent "=>") : args)) =
-  let (params, body) = case args of
-        [] -> ([], NullV) -- handle empty function case
-        _  -> (init args, last args)
-  in LamE [case a of SAtom (AIdent x) -> x; _ -> error "expected identifier"] (parse body)
-parse (SList (f : args)) =
-  let func = parse f
-      args' = map parse args
-  in AppE func args'
-parse (SList exprs) = SeqE (map parse exprs)
-
-
--- | a helper function to turn the initial user string into a Sexpr
-parseExpr :: String -> SExpr
-parseExpr input =
-  case parseSExpFromString input of
-    Left err -> error $ "Parse error: " ++ show err-}
